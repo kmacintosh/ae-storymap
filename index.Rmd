@@ -1,0 +1,81 @@
+---
+title: "Untitled"
+author: "kmacintosh"
+date: "November 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries}
+
+library(tidyverse)
+library(ggmap)
+library(leaflet)
+library(htmlwidgets)
+```
+
+# Import data
+
+```{r data}
+storymap_df <- read_csv("data/ae_storymap.csv") %>%
+  mutate(to_geocode = paste((coalesce(location, "")), 
+                            (coalesce(city, "")), 
+                            (coalesce(state_province, "")), 
+                            (coalesce(country, "")), sep = " "))
+# geocode
+storymap_geocoded <- storymap_df %>% 
+  as.data.frame() %>% 
+  mutate_geocode(to_geocode)
+```
+
+# Generate popups
+
+Construct the HTML for the popup, which includes the speaker's name and bio, a link to the corresponding post on the Anecdotal Evidence page, and the embeded mp3 of their story.
+
+```{r popup}
+# template for blog link
+blog_link <- paste0("<h3><a href='%s' style='text-decoration:none'>",
+                    "%s</a></h3>")
+# template for audio player
+player <- paste0("<audio controls style='width:100%%'>",
+                 "<source src='%s' type='audio/mpeg'></audio>")
+storymap_popup <- storymap_geocoded %>% 
+  # generate html for popup
+  mutate(popup_html = paste0(sprintf(blog_link, link, storyteller),
+                             "<p>", description, "</p>",
+                             sprintf(player, audio_file)))
+```
+
+# Leaflet
+
+```{r}
+
+storymap_popup_subset <- storymap_popup[3,]
+
+
+m <- leaflet(storymap_popup_subset) %>% 
+  addProviderTiles("CartoDB.Positron") %>% 
+  addCircleMarkers(lng = ~lon, lat = ~lat, radius = 8, 
+                   stroke = TRUE, color = '#aaa', weight = 1, 
+                   fillColor = '#69d2e7', fillOpacity = 0.8,
+                   popup = ~popup_html,
+                   clusterOptions = markerClusterOptions(showCoverageOnHover = FALSE)) %>% 
+  setView(0, 0, 2)
+
+m
+
+
+```
+
+# Full screen
+
+Create a stand alone HTML file of the [full screen map](ae-storymap.html).
+
+```{r full-screen}
+saveWidget(m, file = 'ae-storymap.html', selfcontained = TRUE)
+```
+```
