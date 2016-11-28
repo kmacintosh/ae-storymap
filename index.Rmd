@@ -1,7 +1,8 @@
 ---
-title: "Untitled"
-author: "kmacintosh"
-date: "November 28, 2016"
+title: "Anecdotal Evidence Story Map"
+author: "Katie MacIntosh"
+date: "November 29, 2016"
+
 output: html_document
 ---
 
@@ -10,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r libraries}
+```{r libraries, message=FALSE, error=FALSE}
 
 library(tidyverse)
 library(ggmap)
@@ -20,7 +21,11 @@ library(htmlwidgets)
 
 # Import data
 
-```{r data}
+The "ae_storymap" .csv file was constructed manually by listening to the story recordings. Some stories were very specific and provided a point location, i.e. "Van Dusen Botanical Garden", while others only referred to a broad geographic area, like "France", for example. I separated these into different columns based on scale, ie. "location", "city", "country", etc. By concatenating the locations in these columns, I ended up with one location to be geocoded.
+
+For geocoding, I used the 'geocode' function in the ggmap package.
+
+```{r data, message = FALSE}
 storymap_df <- read_csv("data/ae_storymap.csv") %>%
   mutate(to_geocode = paste((coalesce(location, "")), 
                             (coalesce(city, "")), 
@@ -34,7 +39,7 @@ storymap_geocoded <- storymap_df %>%
 
 # Generate popups
 
-Construct the HTML for the popup, which includes the speaker's name and bio, a link to the corresponding post on the Anecdotal Evidence page, and the embeded mp3 of their story.
+This constructs the HTML for the popup, which includes the speaker's name and bio, a link to the corresponding post on the Anecdotal Evidence page, and the embedded .mp3 of their story.
 
 ```{r popup}
 # template for blog link
@@ -52,19 +57,27 @@ storymap_popup <- storymap_geocoded %>%
 
 # Leaflet
 
-```{r}
+```{r map create}
 
-storymap_popup_subset <- storymap_popup[3,]
-
-
-m <- leaflet(storymap_popup_subset) %>% 
-  addProviderTiles("CartoDB.Positron") %>% 
+m <- leaflet(storymap_popup) %>% 
+  addProviderTiles("OpenStreetMap.BlackAndWhite") %>% 
   addCircleMarkers(lng = ~lon, lat = ~lat, radius = 8, 
                    stroke = TRUE, color = '#aaa', weight = 1, 
                    fillColor = '#69d2e7', fillOpacity = 0.8,
                    popup = ~popup_html,
-                   clusterOptions = markerClusterOptions(showCoverageOnHover = FALSE)) %>% 
-  setView(0, 0, 2)
+                   clusterOptions = markerClusterOptions(showCoverageOnHover = FALSE,
+                                                         zoomToBoundsOnClick = TRUE,
+                                                         iconCreateFunction=JS("function (cluster) {            var childCount = cluster.getChildCount();  
+                if (childCount < 100) {  
+                  c = 'rgba(45, 132, 200, 1.0);'
+                } else { 
+                  c = 'rgba(241, 128, 23, 1);'  
+                }    
+        return new L.DivIcon({ html: '<div style=\"background-color:'+c+'\"><span>' + childCount + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+
+  }")))
+
+
 
 m
 
