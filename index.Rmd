@@ -7,7 +7,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(knitr::opts_chunk$set(warning = FALSE, message = FALSE))
 ```
 
 
@@ -60,10 +60,9 @@ storymap_popup <- storymap_geocoded %>%
 
 ```{r map create}
 
-#this will apply a random shift of maximum 10 meters:
 storymap_shifted <- storymap_popup %>% 
-  mutate(lon = lon + runif(length(lon)) / 1000,
-         lat = lat + runif(length(lat)) / 1000)
+  mutate(lon = lon + runif(length(lon)) / 500,
+         lat = lat + runif(length(lat)) / 500)
 
 m <- leaflet(storymap_shifted) %>% 
   addProviderTiles("Esri.WorldTerrain") %>% 
